@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="/commons/js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="/commons/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/commons/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/commons/js/dataTables.bootstrap.min.js"></script>
+    <script type="text/javascript" src="/commons/js/dateFormat.js"></script>
+    <script type="text/javascript" src="/commons/js/bootbox.min.js"></script>
+    <script type="text/javascript" src="/commons/My97DatePicker/WdatePicker.js"></script>
+    <script type="text/javascript" src="/commons/js/fileinput.min.js"></script>
+
+    <link type="text/css" rel="stylesheet" href="/commons/css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="/commons/css/layui.css"/>
+    <link type="text/css" rel="stylesheet" href="/commons/css/fileinput.min.css"/>
+    <script>
+        var table_g;
+        $(function () {
+            table_g = $("#table_g").DataTable({
+                searching : false,//关掉搜索框
+                autoWidth:true,  //自适应宽度
+                info:true,  //展示表格左下角的信息,也就是分页栏
+                lengthChange:true,  //是否改变每页展示的条数
+                lengthMenu:[5, 10, 15],  //下拉框 控制每页展示条数
+                ordering:true,  //是否允许排序
+                paging:true,  //是否允许开启本地分页
+                processing:true,  //是否先处理状态
+                serverSide:true,  //true是服务器模式 false是客户端模式
+                //和后台进行交互
+                ajax:{
+                    url:"http://localhost:8081/pagingQueryStudent",
+                    dataSrc:function(res){
+                        return res.data;
+                    }
+                },
+                //将数据渲染到页面的table表格中
+                columns:[
+                    {data:"studentName", title:"姓名", render:function(data, type, row, meta){
+                            if(data != '' && data != null){
+                                return data;
+                            }
+                            return "————";
+                        }},
+                    {data:"age", title:"年龄", render:function(data, type, row, meta){
+                            if(data != '' && data != null){
+                                return data;
+                            }
+                            return "————";
+                        }},
+                    {data:"address", title:"地址", render:function(data, type, row, meta){
+                            if(data != '' && data != null){
+                                return data;
+                            }
+                            return "————";
+                        }},
+                    {data:"img", title:"照片", render:function(data, type, row, meta){
+                            if(data != '' && data != null){
+                                return "<img src='"+data+"' width='80' height='80'/>";
+                            }
+                            return "————";
+                        }},
+                    {data:"birthday", title:"生日", render:function(data, type, row, meta){
+                            if(data != '' && data != null){
+                                return new Date(data).Format("yyyy-MM-dd");
+                            }
+                            return "————";
+                        }},
+                    {data:function (data) {
+                            return '<button class="layui-btn layui-btn-xs" onclick="updateStudent(\''+data.id+'\')">' +
+                                       '<span class="glyphicon glyphicon-pencil" style="color: #ffffff;" lay-event="edit">修改</span>' +
+                                   '</button>'+
+                                   '<button class="layui-btn layui-btn-xs" onclick="deleteStudent(\''+data.id+'\')" style="background-color: red;">' +
+                                       '<span class="glyphicon glyphicon-trash">删除</span>' +
+                                   '</button>';
+                        },title:"操作"}
+                ],
+                language:{
+                    url:"/commons/js/Chinese.json"
+                }
+            });
+        });
+        function saveStudent() {
+            var saveHtml = "";
+            saveHtml += '<form class="form-horizontal" role="form" id="saveStudentForm">'+
+                            '<div class="form-group">'+
+                                '<label class="col-sm-2 control-label">姓名:</label>'+
+                                '<div class="col-sm-10">'+
+                                    '<input type="text" class="form-control" name="studentName" placeholder="请输入姓名">'+
+                                '</div>'+
+                            '</div>'+
+                            '<div class="form-group">'+
+                                '<label class="col-sm-2 control-label">年龄:</label>'+
+                                '<div class="col-sm-10">'+
+                                    '<input type="text" class="form-control" name="age" placeholder="请输入年龄">'+
+                                '</div>'+
+                            '</div>'+
+                            '<div class="form-group">'+
+                                '<label class="col-sm-2 control-label">家庭住址:</label>'+
+                                '<div class="col-sm-10">'+
+                                    '<input type="text" class="form-control" name="address" placeholder="请输入地址">'+
+                                '</div>'+
+                            '</div>'+
+                            '<div class="form-group">'+
+                                '<label class="col-sm-2 control-label">照片:</label>'+
+                                '<div class="col-sm-10">'+
+                                    '<input type="hidden" name="img"/>'+
+                                    '<input type="file" name="photo"/>'+
+                                '</div>'+
+                            '</div>'+
+                            '<div class="form-group">'+
+                                '<label class="col-sm-2 control-label">生日:</label>'+
+                                '<div class="col-sm-4">'+
+                                    '<input type="text" class="form-control" name="birthday" onclick="WdatePicker()">'+
+                                '</div>'+
+                            '</div>'+
+                        '</form>';
+            $.ajax({
+                success:function (res) {
+                    //文件上传
+                    $("[name='photo']").fileinput({
+                        language:"zh",
+                        uploadUrl:"http://localhost:8081/uploadFile",  //用于跳转后台写的上传文件的方法
+                        showCaption:false,  //是否显示上传的文件名的文本框
+                        dropZoneEnabled:false  //是否显示拖拽文件的文本域
+                    }).on("fileuploaded",function (event, result) {
+                        var url=result.response.url;
+                        $("[name='img']").val("http://localhost:8081"+url);
+                    });
+                }
+            });
+            bootbox.confirm({
+                message:saveHtml,
+                title:"新增学生",
+                buttons:{
+                    cancel:{
+                        label:"取消"
+                    },
+                    confirm:{
+                        label:"新增数据"
+                    }
+                },
+                callback:function (result) {
+                    if(result){
+                        $.ajax({
+                            url:"http://localhost:8081/saveStudent",
+                            data:$("#saveStudentForm").serialize(),
+                            success:function (res) {
+                                if (res == "200"){
+                                    bootbox.alert("新增成功!");
+                                    table_g.ajax.reload();
+                                }
+                            }
+                        })
+                    }
+                }
+            })
+        }
+
+        function deleteStudent(id) {
+            $.ajax({
+                url:"http://localhost:8081/deleteStudent",
+                data:{"id":id},
+                success:function (res) {
+                    if (res == "200"){
+                        bootbox.alert("删除成功!");
+                        table_g.ajax.reload();
+                    }
+                }
+            })
+        }
+
+        function updateStudent(id) {
+            $.ajax({
+                url:"http://localhost:8081/queryStudentById",
+                data:{"id":id},
+                success:function (res) {
+                    var updateHtml = "";
+                    updateHtml += '<form class="form-horizontal" role="form" id="updateStudentForm">'+
+                                    '<input type="hidden" name="id" value="' + res.id + '"/>'+
+                                    '<div class="form-group">'+
+                                        '<label class="col-sm-2 control-label">姓名:</label>'+
+                                        '<div class="col-sm-10">'+
+                                            '<input type="text" class="form-control" name="studentName" value="' + res.studentName + '" placeholder="请输入姓名">'+
+                                        '</div>'+
+                                    '</div>'+
+                                    '<div class="form-group">'+
+                                        '<label class="col-sm-2 control-label">年龄:</label>'+
+                                        '<div class="col-sm-10">'+
+                                            '<input type="text" class="form-control" name="age" value="' + res.age + '" placeholder="请输入年龄">'+
+                                        '</div>'+
+                                    '</div>'+
+                                    '<div class="form-group">'+
+                                        '<label class="col-sm-2 control-label">家庭住址:</label>'+
+                                        '<div class="col-sm-10">'+
+                                            '<input type="text" class="form-control" name="address" value="' + res.address + '" placeholder="请输入姓名">'+
+                                        '</div>'+
+                                    '</div>'+
+                                    '<div class="form-group">'+
+                                        '<label class="col-sm-2 control-label">照片:</label>'+
+                                        '<div class="col-sm-10">'+
+                                            '<input type="hidden" name="img" id="img" value="' + res.img + '"/>'+
+                                            '<input type="file" name="photo"/>'+
+                                        '</div>'+
+                                    '</div>'+
+                                    '<div class="form-group">'+
+                                        '<label class="col-sm-2 control-label">生日:</label>'+
+                                        '<div class="col-sm-10">'+
+                                            '<input type="text" class="form-control" name="birthday" id="birthdays" onclick="WdatePicker()">'+
+                                        '</div>'+
+                                    '</div>'+
+                                  '</form>';
+                    $.ajax({
+                        success:function () {
+                            var arr = [];
+                            var url = $("#img").val();
+                            if(url != null && url != ''){
+                                arr.push(url);
+                            }
+                            $("[name='photo']").fileinput({
+                                language:"zh",
+                                uploadUrl:"http://localhost:8081/uploadFile",  //用于跳转后台写的上传文件的方法
+                                showCaption:false,  //是否显示上传的文件名的文本框
+                                dropZoneEnabled:false,  //是否显示拖拽文件的文本域
+                                initialPreview:arr,
+                                initialPreviewAsData: true
+                            }).on("fileuploaded",function (event, result) {
+                                var url=result.response.url;
+                                $("[name='img']").val("http://localhost:8081"+url);
+                            });
+
+                            var birthday = new Date(res.birthday);
+                            var birthdayStr=birthday.getFullYear()+"-"+(birthday.getMonth()+1)+"-"+birthday.getDate();
+                            $("#birthdays").val(birthdayStr);
+                        }
+                    });
+
+                    bootbox.confirm({
+                        message:updateHtml,
+                        title:"修改学生",
+                        buttons:{
+                            cancel:{
+                                label:"取消"
+                            },
+                            confirm:{
+                                label:"修改数据"
+                            }
+                        },
+                        callback:function (result) {
+                            if(result){
+                                $.ajax({
+                                    url:"http://localhost:8081/updateStudent",
+                                    data:$("#updateStudentForm").serialize(),
+                                    success:function (res) {
+                                        if (res == "200"){
+                                            bootbox.alert("修改成功!");
+                                            table_g.ajax.reload();
+                                        }
+                                    }
+                                })
+                            }
+                        }
+                    })
+                }
+            })
+        }
+
+        function importExcel() {
+            $.ajax({
+                url:"http://localhost:8081/importExcel",
+                success:function (res) {
+                    if (res == "200"){
+                        bootbox.alert("导出成功!");
+                    } else {
+                        bootbox.alert("请添加数据!");
+                    }
+                }
+            })
+        }
+    </script>
+</head>
+<body>
+<div class="panel panel-default" id="juBu">
+    <div class="panel-heading">学生列表</div>
+    <div class="panel-body">
+        <center>
+            <button type="button" class="btn btn-default btn-sm btn-info" onclick="saveStudent()">
+                <span class="glyphicon glyphicon-plus" id="save">新增</span>
+            </button>
+            <button type="button" class="btn btn-default btn-sm btn-info" onclick="importExcel()">
+                <span class="glyphicon glyphicon-save">导出Excel</span>
+            </button>
+        </center>
+        <table class="table table-bordered table-striped" id="table_g"></table>
+    </div>
+</div>
+</body>
+</html>
